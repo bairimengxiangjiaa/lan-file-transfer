@@ -1,0 +1,732 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #4CAF50;
+    --primary-dark: #45a049;
+    --danger: #f44336;
+    --background: #f5f5f5;
+    --card-bg: #ffffff;
+    --text: #333333;
+    --text-light: #666666;
+    --border: #e0e0e0;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--background);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* 头部样式 */
+.header {
+    background: var(--card-bg);
+    padding: 20px 24px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header h1 {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.device-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.device-name {
+    font-weight: 500;
+    color: var(--text-light);
+}
+
+.connection-status {
+    font-size: 14px;
+    color: var(--primary);
+}
+
+.connection-status.disconnected {
+    color: var(--danger);
+}
+
+/* 连接信息卡片 */
+.connect-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.connect-info {
+    flex: 1;
+}
+
+.connect-url {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.connect-url .label {
+    font-size: 14px;
+    color: var(--text-light);
+    white-space: nowrap;
+}
+
+.connect-url .url {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+    word-break: break-all;
+}
+
+.btn-copy {
+    background: none;
+    border: 1px solid var(--border);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.btn-copy:hover {
+    background: var(--background);
+}
+
+.btn-copy.copied {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.connect-hint {
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+.qrcode {
+    flex-shrink: 0;
+}
+
+.qrcode canvas {
+    border-radius: 8px;
+}
+
+/* 主要内容区 */
+.main-content {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+}
+
+/* 侧边栏 */
+.sidebar {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+    height: fit-content;
+}
+
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.section-title h2 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.device-count {
+    background: var(--primary);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 14px;
+}
+
+.device-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.device-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--background);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.device-item:hover {
+    background: #e8f5e9;
+}
+
+.device-item.selected {
+    background: #c8e6c9;
+    border: 2px solid var(--primary);
+}
+
+.device-icon {
+    font-size: 24px;
+}
+
+.device-details {
+    flex: 1;
+}
+
+.device-item-name {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.device-item-ip {
+    font-size: 12px;
+    color: var(--text-light);
+}
+
+/* 内容区 */
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 上传区域 */
+.upload-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+}
+
+.drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.drop-zone:hover,
+.drop-zone.drag-over {
+    border-color: var(--primary);
+    background: #e8f5e9;
+}
+
+.drop-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.drop-text {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.drop-hint {
+    font-size: 14px;
+    color: var(--text-light);
+    margin-bottom: 16px;
+}
+
+.upload-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.btn-upload {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-upload:hover {
+    background: var(--primary-dark);
+}
+
+/* 传输状态 */
+.transfer-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+}
+
+.transfer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.transfer-item {
+    background: var(--background);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.transfer-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.transfer-name {
+    font-weight: 500;
+    font-size: 14px;
+    word-break: break-all;
+}
+
+.transfer-status {
+    font-size: 12px;
+    color: var(--text-light);
+    white-space: nowrap;
+}
+
+.progress-bar {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 4px;
+    transition: width 0.3s;
+    width: 0%;
+}
+
+.progress-fill.complete {
+    background: var(--primary);
+}
+
+.progress-fill.error {
+    background: var(--danger);
+}
+
+/* 文件列表 */
+.file-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+}
+
+.btn-refresh {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.btn-refresh:hover {
+    background: var(--background);
+}
+
+.btn-clear-all {
+    background: none;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-right: 8px;
+    transition: all 0.2s;
+}
+
+.btn-clear-all:hover {
+    background: var(--danger);
+    color: white;
+}
+
+/* 文件树工具栏 */
+.file-tree-toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.btn-select-all {
+    background: var(--background);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-select-all:hover {
+    background: #e8f5e9;
+}
+
+.btn-download-selected {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-download-selected:hover:not(:disabled) {
+    background: var(--primary-dark);
+}
+
+.btn-download-selected:disabled {
+    background: var(--border);
+    cursor: not-allowed;
+}
+
+.btn-delete-selected {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-delete-selected:hover:not(:disabled) {
+    background: #d32f2f;
+}
+
+.btn-delete-selected:disabled {
+    background: var(--border);
+    cursor: not-allowed;
+    color: var(--text-light);
+}
+
+/* 文件树 */
+.file-tree {
+    display: flex;
+    flex-direction: column;
+}
+
+/* 文件夹 */
+.folder-item {
+    margin-bottom: 4px;
+}
+
+.folder-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--background);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.folder-header:hover {
+    background: #e8f5e9;
+}
+
+.folder-icon {
+    font-size: 18px;
+}
+
+.folder-name {
+    font-weight: 500;
+    font-size: 14px;
+    flex: 1;
+}
+
+.folder-count {
+    font-size: 12px;
+    color: var(--text-light);
+}
+
+.folder-actions {
+    display: flex;
+    gap: 4px;
+}
+
+@media (hover: hover) {
+    .folder-actions {
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .folder-header:hover .folder-actions {
+        opacity: 1;
+    }
+}
+
+.btn-folder-action {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-download-folder:hover {
+    background: #e3f2fd;
+}
+
+.btn-delete-folder:hover {
+    background: #ffebee;
+}
+
+.folder-toggle {
+    font-size: 12px;
+    color: var(--text-light);
+    transition: transform 0.2s;
+}
+
+.folder-item.collapsed .folder-toggle {
+    transform: rotate(-90deg);
+}
+
+.folder-children {
+    margin-left: 24px;
+    border-left: 2px solid var(--border);
+    padding-left: 12px;
+}
+
+.folder-item.collapsed .folder-children {
+    display: none;
+}
+
+/* 文件 */
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.file-item:hover {
+    background: var(--background);
+}
+
+.file-icon {
+    font-size: 16px;
+}
+
+.file-name {
+    flex: 1;
+    font-size: 14px;
+    word-break: break-all;
+}
+
+.file-size {
+    font-size: 12px;
+    color: var(--text-light);
+    white-space: nowrap;
+}
+
+.file-actions {
+    display: flex;
+    gap: 4px;
+}
+
+@media (hover: hover) {
+    .file-actions {
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .file-item:hover .file-actions,
+    .folder-header:hover .folder-actions {
+        opacity: 1;
+    }
+}
+
+.btn-download,
+.btn-delete {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-download:hover {
+    background: #e3f2fd;
+}
+
+.btn-delete:hover {
+    background: #ffebee;
+}
+
+/* 复选框 */
+.file-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-light);
+}
+
+.empty-state p {
+    margin-bottom: 8px;
+}
+
+.hint {
+    font-size: 14px;
+}
+
+/* 弹窗 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    min-width: 300px;
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+    font-size: 20px;
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 20px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.modal-content input:focus {
+    border-color: var(--primary);
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 12px 32px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+
+    .header {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+
+    .connect-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .connect-url {
+        justify-content: center;
+    }
+
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+
+    .drop-zone {
+        padding: 24px;
+    }
+
+    .drop-icon {
+        font-size: 36px;
+    }
+
+    .upload-buttons {
+        flex-direction: column;
+    }
+}
