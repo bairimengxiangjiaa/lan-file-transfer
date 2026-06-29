@@ -10,7 +10,6 @@
 - 📱 响应式设计，支持手机访问
 - 🚀 无需安装，浏览器即可使用
 - 💾 文件管理（下载/删除）
-- 🪟 支持 Windows 系统服务（开机自启）
 
 ## 🚀 快速开始
 
@@ -25,6 +24,8 @@ npm install
 ```bash
 npm start
 ```
+
+或双击 `start.bat` / `lan-transfer.bat` 启动。
 
 ### 3. 访问应用
 
@@ -41,39 +42,6 @@ npm start
 3. **下载文件**: 点击文件右侧的下载按钮
 4. **删除文件**: 点击文件右侧的删除按钮
 
-## 🪟 Windows 系统服务
-
-可以将应用安装为 Windows 系统服务，实现开机自启、后台运行。
-
-### 安装服务
-
-```bash
-# 方式一：使用 npm 脚本
-npm run service:install
-
-# 方式二：直接运行脚本
-node service.js install
-
-# 方式三：双击 install-service.bat
-```
-
-### 管理服务
-
-```bash
-npm run service:start      # 启动服务
-npm run service:stop       # 停止服务
-npm run service:restart    # 重启服务
-npm run service:uninstall  # 卸载服务
-```
-
-也可以直接双击对应的 `.bat` 文件：
-- `install-service.bat` - 安装服务
-- `uninstall-service.bat` - 卸载服务
-- `start-service.bat` - 启动服务
-- `stop-service.bat` - 停止服务
-
-> **注意**：安装/卸载服务需要管理员权限。
-
 ## 🛠️ 技术栈
 
 - **后端**: Node.js + Express + WebSocket
@@ -84,20 +52,16 @@ npm run service:uninstall  # 卸载服务
 
 ```
 lan-file-transfer/
-├── server.js              # 服务器端代码
-├── service.js             # Windows 服务管理脚本
-├── package.json           # 项目配置
-├── README.md              # 项目说明
-├── start.bat              # 快速启动脚本
-├── install-service.bat    # 安装服务脚本
-├── uninstall-service.bat  # 卸载服务脚本
-├── start-service.bat      # 启动服务脚本
-├── stop-service.bat       # 停止服务脚本
-├── public/                # 前端静态文件
-│   ├── index.html         # 主页面
-│   ├── style.css          # 样式文件
-│   └── app.js             # 前端逻辑
-└── uploads/               # 上传文件存储目录（自动创建）
+├── server.js          # 服务器端代码
+├── package.json       # 项目配置
+├── README.md          # 项目说明
+├── start.bat          # 快速启动脚本（放项目目录里用）
+├── lan-transfer.bat   # 启动脚本（可放桌面，直接双击启动）
+├── public/            # 前端静态文件
+│   ├── index.html     # 主页面
+│   ├── style.css      # 样式文件
+│   └── app.js         # 前端逻辑
+└── uploads/           # 上传文件存储目录（自动创建）
 ```
 
 ## ⚙️ 配置
