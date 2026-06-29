@@ -145,7 +145,8 @@ wss.on('connection', (ws, req) => {
         type: 'welcome',
         deviceId,
         deviceName,
-        ip: currentIP
+        ip: currentIP,
+        hostname: os.hostname()
     }));
 
     broadcastDeviceList();

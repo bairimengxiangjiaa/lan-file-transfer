@@ -135,6 +135,26 @@ body {
     border-radius: 8px;
 }
 
+.qrcode-group {
+    display: flex;
+    gap: 16px;
+    flex-shrink: 0;
+}
+
+.qrcode-item {
+    text-align: center;
+}
+
+.qrcode-label {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 6px;
+}
+
+.url-hostname {
+    color: var(--primary);
+}
+
 /* 主要内容区 */
 .main-content {
     display: grid;
@@ -712,6 +732,15 @@ body {
 
     .connect-url {
         justify-content: center;
+    }
+
+    .qrcode-group {
+        justify-content: center;
+    }
+
+    .qrcode canvas {
+        width: 96px !important;
+        height: 96px !important;
     }
 
     .main-content {

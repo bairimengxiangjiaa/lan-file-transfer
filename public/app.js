@@ -4,6 +4,7 @@ let deviceId = null;
 let deviceName = null;
 let selectedDevice = null;
 let serverIP = null;
+let serverHostname = null;
 let allFiles = [];
 let selectedFiles = new Set();
 
@@ -25,7 +26,10 @@ const elements = {
     setNameBtn: document.getElementById('setNameBtn'),
     connectUrl: document.getElementById('connectUrl'),
     copyBtn: document.getElementById('copyBtn'),
-    qrcode: document.getElementById('qrcode')
+    connectHostname: document.getElementById('connectHostname'),
+    copyHostnameBtn: document.getElementById('copyHostnameBtn'),
+    qrcode: document.getElementById('qrcode'),
+    qrcodeHostname: document.getElementById('qrcodeHostname')
 };
 
 // 初始化
@@ -170,6 +174,7 @@ function handleMessage(data) {
         case 'welcome':
             deviceId = data.deviceId;
             serverIP = data.ip;
+            serverHostname = data.hostname;
             updateConnectInfo();
             break;
 
@@ -194,23 +199,42 @@ function handleMessage(data) {
 
 // 更新连接信息
 function updateConnectInfo() {
-    if (!serverIP) return;
-
     const port = window.location.port || '3000';
-    const lanUrl = `http://${serverIP}:${port}`;
 
-    elements.connectUrl.textContent = lanUrl;
+    // IP 地址
+    if (serverIP) {
+        const lanUrl = `http://${serverIP}:${port}`;
+        elements.connectUrl.textContent = lanUrl;
 
-    if (typeof QRCode !== 'undefined') {
-        elements.qrcode.innerHTML = '';
-        new QRCode(elements.qrcode, {
-            text: lanUrl,
-            width: 128,
-            height: 128,
-            colorDark: '#333333',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.L
-        });
+        if (typeof QRCode !== 'undefined' && elements.qrcode) {
+            elements.qrcode.innerHTML = '';
+            new QRCode(elements.qrcode, {
+                text: lanUrl,
+                width: 128,
+                height: 128,
+                colorDark: '#333333',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.L
+            });
+        }
+    }
+
+    // 电脑名地址
+    if (serverHostname && elements.connectHostname) {
+        const hostnameUrl = `http://${serverHostname}:${port}`;
+        elements.connectHostname.textContent = hostnameUrl;
+
+        if (typeof QRCode !== 'undefined' && elements.qrcodeHostname) {
+            elements.qrcodeHostname.innerHTML = '';
+            new QRCode(elements.qrcodeHostname, {
+                text: hostnameUrl,
+                width: 128,
+                height: 128,
+                colorDark: '#333333',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.L
+            });
+        }
     }
 }
 
@@ -231,19 +255,40 @@ function generateQRCode() {
     }
 }
 
-// 复制URL
+// 复制IP地址URL
 function copyUrl() {
     const port = window.location.port || '3000';
     const url = serverIP ? `http://${serverIP}:${port}` : window.location.href;
 
     if (navigator.clipboard) {
         navigator.clipboard.writeText(url).then(() => {
-            showCopySuccess();
+            showCopySuccess(elements.copyBtn);
         }).catch(() => {
             fallbackCopy(url);
+            showCopySuccess(elements.copyBtn);
         });
     } else {
         fallbackCopy(url);
+        showCopySuccess(elements.copyBtn);
+    }
+}
+
+// 复制电脑名地址URL
+function copyHostnameUrl() {
+    const port = window.location.port || '3000';
+    if (!serverHostname) return;
+    const url = `http://${serverHostname}:${port}`;
+
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+            showCopySuccess(elements.copyHostnameBtn);
+        }).catch(() => {
+            fallbackCopy(url);
+            showCopySuccess(elements.copyHostnameBtn);
+        });
+    } else {
+        fallbackCopy(url);
+        showCopySuccess(elements.copyHostnameBtn);
     }
 }
 
@@ -265,13 +310,14 @@ function fallbackCopy(text) {
     document.body.removeChild(textarea);
 }
 
-function showCopySuccess() {
-    elements.copyBtn.classList.add('copied');
-    elements.copyBtn.textContent = '✓';
+function showCopySuccess(btnElement) {
+    const btn = btnElement || elements.copyBtn;
+    btn.classList.add('copied');
+    btn.textContent = '✓';
 
     setTimeout(() => {
-        elements.copyBtn.classList.remove('copied');
-        elements.copyBtn.textContent = '📋';
+        btn.classList.remove('copied');
+        btn.textContent = '📋';
     }, 2000);
 }
 
@@ -359,6 +405,7 @@ function setupEventListeners() {
 
     elements.refreshBtn.addEventListener('click', loadFileList);
     elements.copyBtn.addEventListener('click', copyUrl);
+    elements.copyHostnameBtn.addEventListener('click', copyHostnameUrl);
 
     // 清空所有文件
     document.getElementById('clearAllBtn').addEventListener('click', clearAllFiles);
