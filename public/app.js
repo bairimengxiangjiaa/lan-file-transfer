@@ -334,7 +334,7 @@ function setupEventListeners() {
     elements.dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         elements.dropZone.classList.remove('drag-over');
-        handleFiles(e.dataTransfer.files);
+        handleDrop(e.dataTransfer);
     });
 
     document.getElementById('selectFileBtn').addEventListener('click', (e) => {
@@ -364,7 +364,106 @@ function setupEventListeners() {
     document.getElementById('clearAllBtn').addEventListener('click', clearAllFiles);
 }
 
-// 处理文件上传
+// 处理拖拽事件（支持文件和文件夹）
+function handleDrop(dataTransfer) {
+    // 优先使用 items + webkitGetAsEntry 来支持文件夹拖拽
+    if (dataTransfer.items && dataTransfer.items.length > 0) {
+        const items = Array.from(dataTransfer.items).filter(item => item.kind === 'file');
+        if (items.length > 0) {
+            const entries = items.map(item => item.webkitGetAsEntry()).filter(Boolean);
+            if (entries.length > 0) {
+                // 收集所有文件后统一上传
+                collectFilesFromEntries(entries).then(fileList => {
+                    fileList.forEach(({ file, relativePath }) => {
+                        uploadFile(file, relativePath);
+                    });
+                }).catch(err => {
+                    console.error('读取拖拽文件失败:', err);
+                    // 降级：使用 files
+                    if (dataTransfer.files && dataTransfer.files.length > 0) {
+                        handleFiles(dataTransfer.files);
+                    }
+                });
+                return;
+            }
+        }
+    }
+
+    // 降级：使用 files（仅支持文件，不支持文件夹结构）
+    if (dataTransfer.files && dataTransfer.files.length > 0) {
+        handleFiles(dataTransfer.files);
+    }
+}
+
+/**
+ * 从文件系统条目中递归收集所有文件
+ * @param {FileSystemEntry[]} entries - 文件系统条目数组
+ * @param {string} basePath - 基础相对路径
+ * @returns {Promise<Array<{file: File, relativePath: string}>>} 文件列表
+ */
+function collectFilesFromEntries(entries, basePath = '') {
+    const filePromises = [];
+
+    entries.forEach(entry => {
+        if (entry.isFile) {
+            // 文件条目：转换为 File 对象并记录相对路径
+            filePromises.push(new Promise((resolve) => {
+                entry.file((file) => {
+                    const relativePath = basePath ? `${basePath}/${entry.name}` : '';
+                    resolve({ file, relativePath });
+                }, () => {
+                    // 读取失败，跳过该文件
+                    resolve(null);
+                });
+            }));
+        } else if (entry.isDirectory) {
+            // 目录条目：递归读取子目录
+            const dirPath = basePath ? `${basePath}/${entry.name}` : entry.name;
+            filePromises.push(readDirectoryFiles(entry, dirPath));
+        }
+    });
+
+    return Promise.all(filePromises).then(results => {
+        // 展平结果并过滤 null
+        return results.flat().filter(Boolean);
+    });
+}
+
+/**
+ * 读取目录中的所有文件（递归）
+ * @param {FileSystemDirectoryEntry} dirEntry - 目录条目
+ * @param {string} basePath - 基础相对路径
+ * @returns {Promise<Array<{file: File, relativePath: string}>>} 文件列表
+ */
+function readDirectoryFiles(dirEntry, basePath) {
+    return new Promise((resolve) => {
+        const reader = dirEntry.createReader();
+        const allEntries = [];
+
+        // readEntries 可能需要多次调用才能返回所有条目（Chrome 限制每次最多100个）
+        function readBatch() {
+            reader.readEntries(
+                (batch) => {
+                    if (batch.length === 0) {
+                        // 所有条目读取完毕，递归处理这些条目
+                        collectFilesFromEntries(allEntries, basePath).then(resolve);
+                    } else {
+                        allEntries.push(...batch);
+                        readBatch(); // 继续读取下一批
+                    }
+                },
+                () => {
+                    // 读取失败，返回空数组
+                    resolve([]);
+                }
+            );
+        }
+
+        readBatch();
+    });
+}
+
+// 处理文件上传（来自 input 选择）
 function handleFiles(files) {
     Array.from(files).forEach(file => {
         // 仅在使用 webkitdirectory 选择文件夹时使用 webkitRelativePath

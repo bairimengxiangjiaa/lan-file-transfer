@@ -265,6 +265,20 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// 修复中文文件名编码
+function fixEncoding(str) {
+    if (!str) return str;
+    try {
+        const buf = Buffer.from(str, 'latin1');
+        const decoded = buf.toString('utf8');
+        // 如果解码后包含替换字符，说明原始编码就是正确的
+        if (decoded.includes('�')) return str;
+        return decoded;
+    } catch (e) {
+        return str;
+    }
+}
+
 // 文件上传接口
 app.post('/upload', upload.single('file'), (req, res) => {
     if (!req.file) {
@@ -272,14 +286,15 @@ app.post('/upload', upload.single('file'), (req, res) => {
     }
 
     try {
-        const relativePath = req.body.relativePath || '';
+        // 修复文件名编码
+        req.file.originalname = fixEncoding(req.file.originalname);
+        const relativePath = fixEncoding(req.body.relativePath || '');
         let savePath;
 
         if (relativePath) {
             // 安全检查：防止路径遍历
             savePath = safePath(relativePath);
             if (!savePath) {
-                // 清理临时文件
                 fs.unlinkSync(req.file.path);
                 return res.status(403).json({ error: '非法路径' });
             }
