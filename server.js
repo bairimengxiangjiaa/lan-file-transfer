@@ -587,11 +587,46 @@ function showStartupInfo(port, originalPort) {
     console.log('');
 }
 
+// 检测端口是否已被本服务占用
+// 如果端口上跑的就是文件传输服务，返回 true；否则返回 false
+async function isPortOccupiedBySelf(port) {
+    try {
+        const res = await fetch(`http://localhost:${port}/files`, {
+            method: 'GET',
+            signal: AbortSignal.timeout(2000)
+        });
+        // 如果返回 200 且内容是 JSON 数组，说明是我们自己的服务
+        if (res.ok) {
+            const data = await res.json();
+            return Array.isArray(data);
+        }
+        return false;
+    } catch (e) {
+        return false;
+    }
+}
+
 // 启动服务器
 async function startServer() {
     const originalPort = PORT;
 
+    // 先检查默认端口是否已经被我们自己的服务占用
     if (!(await checkPort(PORT))) {
+        const isSelf = await isPortOccupiedBySelf(PORT);
+        if (isSelf) {
+            // 已经有一个在跑了，直接打开浏览器退出
+            console.log('');
+            console.log('  服务已在运行中，正在打开浏览器...');
+            console.log(`  地址: http://localhost:${PORT}`);
+            console.log('');
+            const url = `http://localhost:${PORT}`;
+            const start = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+            exec(`${start} ${url}`, () => {});
+            // 延迟退出，让浏览器有时间打开
+            setTimeout(() => process.exit(0), 1000);
+            return;
+        }
+        // 被别的程序占了，自动找新端口
         PORT = await findAvailablePort(PORT);
     }
 
