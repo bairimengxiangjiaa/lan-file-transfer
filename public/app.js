@@ -405,9 +405,9 @@ function setupEventListeners() {
     // 连接状态栏点击重连（统一绑定一次，避免反复设置 onclick 导致覆盖或遗漏）
     elements.connectionStatus.addEventListener('click', () => {
         const text = elements.connectionStatus.textContent;
-        if (text.includes('已断开') || text.includes('服务器未启动')) {
-            connectWebSocket();
-        }
+        // 已连接时无需操作；其余状态（已断开、服务器未启动、检测中、重连中）都允许手动触发重连
+        if (text.includes('已连接')) return;
+        connectWebSocket();
     });
 
     // IP 变化提示条关闭按钮
