@@ -608,6 +608,35 @@ async function isPortOccupiedBySelf(port) {
     }
 }
 
+/**
+ * 优雅关闭服务
+ * 在收到终止信号时主动关闭所有 WebSocket 和 HTTP 连接，让客户端尽快感知断开。
+ * @param {string} signal
+ */
+function gracefulShutdown(signal) {
+    console.log(`\n  收到 ${signal}，正在关闭服务...`);
+
+    // 主动关闭所有 WebSocket 连接，避免客户端长时间处于“假连接”状态
+    wss.clients.forEach(ws => {
+        ws.close();
+    });
+
+    // 关闭 HTTP 服务器
+    server.close(() => {
+        console.log('  服务已关闭');
+        process.exit(0);
+    });
+
+    // 超时强制退出
+    setTimeout(() => {
+        console.error('  关闭超时，强制退出');
+        process.exit(1);
+    }, 5000);
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
 // 启动服务器
 async function startServer() {
     const originalPort = PORT;

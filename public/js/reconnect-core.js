@@ -44,7 +44,8 @@
             this.onStateChange = options.onStateChange || (() => {});
             this.onMessage = options.onMessage || (() => {});
             this.onOpen = options.onOpen || (() => {});
-            this.heartbeatInterval = options.heartbeatInterval || 15000;
+            this.heartbeatInterval = options.heartbeatInterval || 5000;
+            this.heartbeatTimeout = options.heartbeatTimeout || 3000;
             this.maxReconnectDelay = options.maxReconnectDelay || 10000;
 
             this.state = 'disconnected';
@@ -53,6 +54,7 @@
             this.shouldReconnect = true;
             this.reconnectTimer = null;
             this.heartbeatTimer = null;
+            this.heartbeatTimeoutTimer = null;
             this.reconnectDelay = 1000;
         }
 
@@ -111,6 +113,8 @@
             socket.onmessage = (event) => {
                 // 过滤过期事件
                 if (event.target !== this.ws) return;
+                // 收到任何消息都说明连接还活着，重置心跳超时
+                this._stopHeartbeatTimeout();
                 this.onMessage(event.data);
             };
 
@@ -118,25 +122,7 @@
                 // 过滤过期事件
                 if (event.target !== this.ws) return;
 
-                this._stopHeartbeat();
-
-                if (!this.shouldReconnect) return;
-
-                this.isConnecting = false;
-                this._setState('checking');
-
-                // 探测服务器是否存活，再决定自动重连或提示服务器未启动
-                this.checkAlive().then(alive => {
-                    if (alive) {
-                        this._setState('reconnecting');
-                        this.reconnectTimer = setTimeout(() => {
-                            this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, this.maxReconnectDelay);
-                            this.connect();
-                        }, this.reconnectDelay);
-                    } else {
-                        this._setState('server-down');
-                    }
-                });
+                this._handleDisconnect();
             };
 
             socket.onerror = (event) => {
@@ -193,6 +179,8 @@
             this.heartbeatTimer = setInterval(() => {
                 if (this.ws && this.ws.readyState === 1 /* OPEN */) {
                     this.send({ type: 'ping' });
+                    // 发送 ping 后启动超时检测：若 heartbeatTimeout 内未收到任何响应，则主动断线重连
+                    this._startHeartbeatTimeout();
                 }
             }, this.heartbeatInterval);
         }
@@ -204,6 +192,67 @@
             if (this.heartbeatTimer) {
                 clearInterval(this.heartbeatTimer);
                 this.heartbeatTimer = null;
+            }
+            this._stopHeartbeatTimeout();
+        }
+
+        /**
+         * 统一的断线处理入口
+         * 同时用于 onclose 和心跳超时，防止重复进入重连流程。
+         */
+        _handleDisconnect() {
+            this._stopHeartbeat();
+
+            if (!this.shouldReconnect) return;
+            // 避免重复处理：已经处于断线/重连/服务器关闭状态则不再进入
+            if (['checking', 'reconnecting', 'server-down'].includes(this.state)) return;
+
+            this.isConnecting = false;
+            this._setState('checking');
+
+            // 探测服务器是否存活，再决定自动重连或提示服务器未启动
+            this.checkAlive().then(alive => {
+                if (!this.shouldReconnect) return;
+                if (alive) {
+                    this._setState('reconnecting');
+                    this.reconnectTimer = setTimeout(() => {
+                        this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, this.maxReconnectDelay);
+                        this.connect();
+                    }, this.reconnectDelay);
+                } else {
+                    this._setState('server-down');
+                }
+            });
+        }
+
+        /**
+         * 启动心跳响应超时检测
+         */
+        _startHeartbeatTimeout() {
+            this._stopHeartbeatTimeout();
+            this.heartbeatTimeoutTimer = setTimeout(() => {
+                // 超时未收到服务器响应，认为连接已死，主动触发重连
+                if (this.ws && this.ws.readyState === 1 /* OPEN */) {
+                    const deadWs = this.ws;
+                    // 先清空引用并移除回调，避免后续延迟到达的 onclose 重复处理
+                    this.ws = null;
+                    deadWs.onopen = null;
+                    deadWs.onmessage = null;
+                    deadWs.onclose = null;
+                    deadWs.onerror = null;
+                    deadWs.close();
+                    this._handleDisconnect();
+                }
+            }, this.heartbeatTimeout);
+        }
+
+        /**
+         * 停止心跳响应超时检测
+         */
+        _stopHeartbeatTimeout() {
+            if (this.heartbeatTimeoutTimer) {
+                clearTimeout(this.heartbeatTimeoutTimer);
+                this.heartbeatTimeoutTimer = null;
             }
         }
     }

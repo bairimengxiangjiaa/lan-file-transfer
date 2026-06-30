@@ -195,4 +195,33 @@ describe('ReconnectCore', () => {
         client.disconnect();
         await server.close();
     });
+
+    test('服务器无响应时心跳超时会主动断线重连', async () => {
+        // 服务器不处理任何消息，模拟服务器假死（不回复 pong）
+        const server = createTestServer(19107);
+        const client = new ReconnectCore({
+            url: 'ws://localhost:19107',
+            createWebSocket: (url) => new WebSocket(url),
+            checkAlive: () => Promise.resolve(true),
+            onStateChange: (state) => {},
+            heartbeatInterval: 100,
+            heartbeatTimeout: 50
+        });
+
+        try {
+            const states = [];
+            client.onStateChange = (state) => states.push(state);
+
+            client.connect();
+            // 等待连接成功 + 至少一次心跳超时检测
+            await delay(800);
+
+            assert.ok(states.includes('connected'), `期望连接成功，实际状态为 ${states.join(', ')}`);
+            assert.ok(states.includes('checking') || states.includes('reconnecting'),
+                `心跳超后期望进入重连流程，实际为 ${states.join(', ')}`);
+        } finally {
+            client.disconnect();
+            await server.close();
+        }
+    });
 });
