@@ -27,11 +27,11 @@
                     <button class="btn-copy" id="copyBtn" title="复制">📋</button>
                 </div>
                 <div class="connect-url">
-                    <span class="label">电脑名：</span>
-                    <span class="url url-hostname" id="connectHostname">-</span>
-                    <button class="btn-copy" id="copyHostnameBtn" title="复制">📋</button>
+                    <span class="label">mDNS：</span>
+                    <span class="url url-hostname" id="connectMDNS">-</span>
+                    <button class="btn-copy" id="copyMDNSBtn" title="复制">📋</button>
                 </div>
-                <div class="connect-hint">手机和电脑连接同一WiFi，扫描二维码或输入地址即可传输<br>推荐使用电脑名地址，IP变化也不受影响</div>
+                <div class="connect-hint">手机和电脑连接同一WiFi，扫描二维码或输入地址即可传输<br>推荐使用 mDNS 地址（.local），IP 变化也不受影响 · 电脑名：<span id="deviceHostname">-</span></div>
             </div>
             <div class="qrcode-group">
                 <div class="qrcode-item">
@@ -39,8 +39,8 @@
                     <div class="qrcode-label">IP地址</div>
                 </div>
                 <div class="qrcode-item">
-                    <div class="qrcode" id="qrcodeHostname"></div>
-                    <div class="qrcode-label">电脑名</div>
+                    <div class="qrcode" id="qrcodeMDNS"></div>
+                    <div class="qrcode-label">mDNS</div>
                 </div>
             </div>
         </div>

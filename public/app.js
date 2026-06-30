@@ -5,6 +5,7 @@ let deviceName = null;
 let selectedDevice = null;
 let serverIP = null;
 let serverHostname = null;
+let serverMDNS = null;
 let allFiles = [];
 let selectedFiles = new Set();
 
@@ -26,10 +27,11 @@ const elements = {
     setNameBtn: document.getElementById('setNameBtn'),
     connectUrl: document.getElementById('connectUrl'),
     copyBtn: document.getElementById('copyBtn'),
-    connectHostname: document.getElementById('connectHostname'),
-    copyHostnameBtn: document.getElementById('copyHostnameBtn'),
+    connectMDNS: document.getElementById('connectMDNS'),
+    copyMDNSBtn: document.getElementById('copyMDNSBtn'),
+    deviceHostname: document.getElementById('deviceHostname'),
     qrcode: document.getElementById('qrcode'),
-    qrcodeHostname: document.getElementById('qrcodeHostname')
+    qrcodeMDNS: document.getElementById('qrcodeMDNS')
 };
 
 // 初始化
@@ -175,6 +177,7 @@ function handleMessage(data) {
             deviceId = data.deviceId;
             serverIP = data.ip;
             serverHostname = data.hostname;
+            serverMDNS = data.mDNS;
             updateConnectInfo();
             break;
 
@@ -219,15 +222,15 @@ function updateConnectInfo() {
         }
     }
 
-    // 电脑名地址
-    if (serverHostname && elements.connectHostname) {
-        const hostnameUrl = `http://${serverHostname}:${port}`;
-        elements.connectHostname.textContent = hostnameUrl;
+    // mDNS 地址（带 .local 后缀）
+    if (serverMDNS && elements.connectMDNS) {
+        const mdnsUrl = `http://${serverMDNS}:${port}`;
+        elements.connectMDNS.textContent = mdnsUrl;
 
-        if (typeof QRCode !== 'undefined' && elements.qrcodeHostname) {
-            elements.qrcodeHostname.innerHTML = '';
-            new QRCode(elements.qrcodeHostname, {
-                text: hostnameUrl,
+        if (typeof QRCode !== 'undefined' && elements.qrcodeMDNS) {
+            elements.qrcodeMDNS.innerHTML = '';
+            new QRCode(elements.qrcodeMDNS, {
+                text: mdnsUrl,
                 width: 128,
                 height: 128,
                 colorDark: '#333333',
@@ -235,6 +238,11 @@ function updateConnectInfo() {
                 correctLevel: QRCode.CorrectLevel.L
             });
         }
+    }
+
+    // 电脑名（纯文字显示）
+    if (serverHostname && elements.deviceHostname) {
+        elements.deviceHostname.textContent = serverHostname;
     }
 }
 
@@ -273,22 +281,22 @@ function copyUrl() {
     }
 }
 
-// 复制电脑名地址URL
-function copyHostnameUrl() {
+// 复制 mDNS 地址URL
+function copyMDNSUrl() {
     const port = window.location.port || '3000';
-    if (!serverHostname) return;
-    const url = `http://${serverHostname}:${port}`;
+    if (!serverMDNS) return;
+    const url = `http://${serverMDNS}:${port}`;
 
     if (navigator.clipboard) {
         navigator.clipboard.writeText(url).then(() => {
-            showCopySuccess(elements.copyHostnameBtn);
+            showCopySuccess(elements.copyMDNSBtn);
         }).catch(() => {
             fallbackCopy(url);
-            showCopySuccess(elements.copyHostnameBtn);
+            showCopySuccess(elements.copyMDNSBtn);
         });
     } else {
         fallbackCopy(url);
-        showCopySuccess(elements.copyHostnameBtn);
+        showCopySuccess(elements.copyMDNSBtn);
     }
 }
 
@@ -405,7 +413,7 @@ function setupEventListeners() {
 
     elements.refreshBtn.addEventListener('click', loadFileList);
     elements.copyBtn.addEventListener('click', copyUrl);
-    elements.copyHostnameBtn.addEventListener('click', copyHostnameUrl);
+    elements.copyMDNSBtn.addEventListener('click', copyMDNSUrl);
 
     // 清空所有文件
     document.getElementById('clearAllBtn').addEventListener('click', clearAllFiles);

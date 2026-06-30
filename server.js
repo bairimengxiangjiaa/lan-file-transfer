@@ -146,7 +146,8 @@ wss.on('connection', (ws, req) => {
         deviceId,
         deviceName,
         ip: currentIP,
-        hostname: os.hostname()
+        hostname: os.hostname(),
+        mDNS: os.hostname() + '.local'
     }));
 
     broadcastDeviceList();
