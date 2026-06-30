@@ -5,7 +5,6 @@ let deviceName = null;
 let selectedDevice = null;
 let serverIP = null;
 let serverHostname = null;
-let serverMDNS = null;
 let allFiles = [];
 let selectedFiles = new Set();
 
@@ -27,11 +26,11 @@ const elements = {
     setNameBtn: document.getElementById('setNameBtn'),
     connectUrl: document.getElementById('connectUrl'),
     copyBtn: document.getElementById('copyBtn'),
-    connectMDNS: document.getElementById('connectMDNS'),
-    copyMDNSBtn: document.getElementById('copyMDNSBtn'),
     deviceHostname: document.getElementById('deviceHostname'),
     qrcode: document.getElementById('qrcode'),
-    qrcodeMDNS: document.getElementById('qrcodeMDNS')
+    ipChangeBanner: document.getElementById('ipChangeBanner'),
+    ipChangeNewAddr: document.getElementById('ipChangeNewAddr'),
+    ipChangeClose: document.getElementById('ipChangeClose')
 };
 
 // 初始化
@@ -177,7 +176,6 @@ function handleMessage(data) {
             deviceId = data.deviceId;
             serverIP = data.ip;
             serverHostname = data.hostname;
-            serverMDNS = data.mDNS;
             updateConnectInfo();
             break;
 
@@ -194,6 +192,10 @@ function handleMessage(data) {
             break;
 
         case 'ip-update':
+            // IP 变化时显示提示条
+            if (serverIP && serverIP !== data.ip) {
+                showIpChangeBanner(data.ip);
+            }
             serverIP = data.ip;
             updateConnectInfo();
             break;
@@ -222,27 +224,29 @@ function updateConnectInfo() {
         }
     }
 
-    // mDNS 地址（带 .local 后缀）
-    if (serverMDNS && elements.connectMDNS) {
-        const mdnsUrl = `http://${serverMDNS}:${port}`;
-        elements.connectMDNS.textContent = mdnsUrl;
-
-        if (typeof QRCode !== 'undefined' && elements.qrcodeMDNS) {
-            elements.qrcodeMDNS.innerHTML = '';
-            new QRCode(elements.qrcodeMDNS, {
-                text: mdnsUrl,
-                width: 128,
-                height: 128,
-                colorDark: '#333333',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.L
-            });
-        }
-    }
-
     // 电脑名（纯文字显示）
     if (serverHostname && elements.deviceHostname) {
         elements.deviceHostname.textContent = serverHostname;
+    }
+}
+
+// 显示 IP 变化提示条
+function showIpChangeBanner(newIp) {
+    const port = window.location.port || '3000';
+    const newUrl = `http://${newIp}:${port}`;
+
+    if (elements.ipChangeNewAddr) {
+        elements.ipChangeNewAddr.textContent = newUrl;
+    }
+    if (elements.ipChangeBanner) {
+        elements.ipChangeBanner.style.display = 'flex';
+    }
+}
+
+// 隐藏 IP 变化提示条
+function hideIpChangeBanner() {
+    if (elements.ipChangeBanner) {
+        elements.ipChangeBanner.style.display = 'none';
     }
 }
 
@@ -278,25 +282,6 @@ function copyUrl() {
     } else {
         fallbackCopy(url);
         showCopySuccess(elements.copyBtn);
-    }
-}
-
-// 复制 mDNS 地址URL
-function copyMDNSUrl() {
-    const port = window.location.port || '3000';
-    if (!serverMDNS) return;
-    const url = `http://${serverMDNS}:${port}`;
-
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(url).then(() => {
-            showCopySuccess(elements.copyMDNSBtn);
-        }).catch(() => {
-            fallbackCopy(url);
-            showCopySuccess(elements.copyMDNSBtn);
-        });
-    } else {
-        fallbackCopy(url);
-        showCopySuccess(elements.copyMDNSBtn);
     }
 }
 
@@ -413,7 +398,11 @@ function setupEventListeners() {
 
     elements.refreshBtn.addEventListener('click', loadFileList);
     elements.copyBtn.addEventListener('click', copyUrl);
-    elements.copyMDNSBtn.addEventListener('click', copyMDNSUrl);
+
+    // IP 变化提示条关闭按钮
+    if (elements.ipChangeClose) {
+        elements.ipChangeClose.addEventListener('click', hideIpChangeBanner);
+    }
 
     // 清空所有文件
     document.getElementById('clearAllBtn').addEventListener('click', clearAllFiles);

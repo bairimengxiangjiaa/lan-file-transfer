@@ -18,30 +18,31 @@
             </div>
         </header>
 
+        <!-- IP 变化提示条（默认隐藏） -->
+        <div class="ip-change-banner" id="ipChangeBanner" style="display: none;">
+            <span class="ip-change-icon">⚠️</span>
+            <span class="ip-change-text">检测到 IP 地址已变化，请使用新地址访问</span>
+            <span class="ip-change-new" id="ipChangeNewAddr">-</span>
+            <button class="ip-change-close" id="ipChangeClose">×</button>
+        </div>
+
         <!-- 连接信息卡片 -->
         <div class="connect-card" id="connectCard">
             <div class="connect-info">
                 <div class="connect-url">
-                    <span class="label">IP地址：</span>
+                    <span class="label">访问地址：</span>
                     <span class="url" id="connectUrl">-</span>
                     <button class="btn-copy" id="copyBtn" title="复制">📋</button>
                 </div>
-                <div class="connect-url">
-                    <span class="label">mDNS：</span>
-                    <span class="url url-hostname" id="connectMDNS">-</span>
-                    <button class="btn-copy" id="copyMDNSBtn" title="复制">📋</button>
+                <div class="connect-hint">
+                    手机连接同一 WiFi，扫描右侧二维码即可访问<br>
+                    电脑名：<span id="deviceHostname">-</span> · 端口固定为 3000<br>
+                    <span class="tip-highlight">💡 手机端建议"添加到桌面"，下次一键打开</span>
                 </div>
-                <div class="connect-hint">手机和电脑连接同一WiFi，扫描二维码或输入地址即可传输<br>推荐使用 mDNS 地址（.local），IP 变化也不受影响 · 电脑名：<span id="deviceHostname">-</span></div>
             </div>
-            <div class="qrcode-group">
-                <div class="qrcode-item">
-                    <div class="qrcode" id="qrcode"></div>
-                    <div class="qrcode-label">IP地址</div>
-                </div>
-                <div class="qrcode-item">
-                    <div class="qrcode" id="qrcodeMDNS"></div>
-                    <div class="qrcode-label">mDNS</div>
-                </div>
+            <div class="qrcode-wrap">
+                <div class="qrcode" id="qrcode"></div>
+                <div class="qrcode-label">扫码访问</div>
             </div>
         </div>
 

@@ -66,6 +66,54 @@ body {
     color: var(--danger);
 }
 
+/* IP 变化提示条 */
+.ip-change-banner {
+    background: #fff3e0;
+    border: 1px solid #ffb74d;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ip-change-icon {
+    font-size: 18px;
+}
+
+.ip-change-text {
+    font-size: 14px;
+    color: #e65100;
+    font-weight: 500;
+}
+
+.ip-change-new {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary);
+    background: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid #ffb74d;
+}
+
+.ip-change-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #e65100;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.ip-change-close:hover {
+    opacity: 0.7;
+}
+
 /* 连接信息卡片 */
 .connect-card {
     background: var(--card-bg);
@@ -125,6 +173,22 @@ body {
 .connect-hint {
     font-size: 14px;
     color: var(--text-light);
+    line-height: 1.8;
+}
+
+.tip-highlight {
+    display: inline-block;
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.qrcode-wrap {
+    flex-shrink: 0;
+    text-align: center;
 }
 
 .qrcode {
@@ -133,16 +197,6 @@ body {
 
 .qrcode canvas {
     border-radius: 8px;
-}
-
-.qrcode-group {
-    display: flex;
-    gap: 16px;
-    flex-shrink: 0;
-}
-
-.qrcode-item {
-    text-align: center;
 }
 
 .qrcode-label {
@@ -734,7 +788,7 @@ body {
         justify-content: center;
     }
 
-    .qrcode-group {
+    .qrcode-wrap {
         justify-content: center;
     }
 
