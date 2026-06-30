@@ -60,10 +60,19 @@ body {
 .connection-status {
     font-size: 14px;
     color: var(--primary);
+    user-select: none;
 }
 
 .connection-status.disconnected {
     color: var(--danger);
+}
+
+.connection-status.connecting {
+    color: #ff9800;
+}
+
+.connection-status.server-down {
+    color: #9e9e9e;
 }
 
 /* IP 变化提示条 */

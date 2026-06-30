@@ -1,5 +1,4 @@
 // 全局变量
-let ws = null;
 let deviceId = null;
 let deviceName = null;
 let selectedDevice = null;
@@ -72,101 +71,105 @@ function setDeviceName() {
     }
 }
 
-// 连接WebSocket（带自动重连）
-let reconnectTimer = null;
-let reconnectDelay = 1000;
-let shouldReconnect = true;
+// WebSocket 客户端实例
+let wsClient = null;
 
-function connectWebSocket() {
-    if (reconnectTimer) {
-        clearTimeout(reconnectTimer);
-        reconnectTimer = null;
+/**
+ * 统一更新连接状态栏
+ * @param {string} state - 状态：connected | connecting | reconnecting | checking | disconnected | server-down
+ */
+function updateConnectionStatus(state) {
+    const status = elements.connectionStatus;
+    status.classList.remove('disconnected', 'connecting', 'server-down');
+    status.style.cursor = 'default';
+
+    switch (state) {
+        case 'connected':
+            status.textContent = '● 已连接';
+            break;
+        case 'connecting':
+            status.textContent = '● 连接中...';
+            status.classList.add('connecting');
+            break;
+        case 'reconnecting':
+            status.textContent = '● 重连中...';
+            status.classList.add('connecting');
+            break;
+        case 'checking':
+            status.textContent = '● 连接断开，检测中...';
+            status.classList.add('disconnected');
+            break;
+        case 'server-down':
+            status.textContent = '● 服务器未启动，点击重连';
+            status.classList.add('server-down');
+            status.style.cursor = 'pointer';
+            break;
+        case 'disconnected':
+        default:
+            status.textContent = '● 已断开，点击重连';
+            status.classList.add('disconnected');
+            status.style.cursor = 'pointer';
+            break;
     }
-
-    shouldReconnect = true;
-
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws = new WebSocket(`${protocol}//${window.location.host}`);
-
-    ws.onopen = () => {
-        reconnectDelay = 1000;
-        shouldReconnect = true;
-        elements.connectionStatus.textContent = '● 已连接';
-        elements.connectionStatus.classList.remove('disconnected');
-        elements.connectionStatus.style.cursor = 'default';
-        elements.connectionStatus.onclick = null;
-
-        if (deviceName) {
-            ws.send(JSON.stringify({ type: 'set-name', name: deviceName }));
-        }
-
-        // 客户端心跳：每15秒发送一次
-        clearInterval(window._heartbeatTimer);
-        window._heartbeatTimer = setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'ping' }));
-            }
-        }, 15000);
-    };
-
-    ws.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            if (data.type !== 'pong') {
-                handleMessage(data);
-            }
-        } catch (e) {
-            console.error('消息解析错误:', e);
-        }
-    };
-
-    ws.onclose = () => {
-        clearInterval(window._heartbeatTimer);
-
-        if (!shouldReconnect) return;
-
-        elements.connectionStatus.textContent = '● 连接断开，检测中...';
-        elements.connectionStatus.classList.add('disconnected');
-
-        // 先检测服务器是否还在线
-        checkServerAlive().then(alive => {
-            if (alive) {
-                // 服务器在线，自动重连
-                elements.connectionStatus.textContent = '● 重连中...';
-                reconnectTimer = setTimeout(() => {
-                    reconnectDelay = Math.min(reconnectDelay * 1.5, 10000);
-                    connectWebSocket();
-                }, reconnectDelay);
-            } else {
-                // 服务器已关闭，停止重连
-                showDisconnected();
-            }
-        });
-    };
 }
 
 // 检测服务器是否在线
 async function checkServerAlive() {
     try {
-        const res = await fetch('/files', { method: 'GET', signal: AbortSignal.timeout(3000) });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch('/files', {
+            method: 'GET',
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
         return res.ok;
     } catch (e) {
         return false;
     }
 }
 
-// 显示断开状态（可点击重连）
+/**
+ * 连接 WebSocket（使用 ReconnectCore 管理重连）
+ */
+function connectWebSocket() {
+    if (wsClient) {
+        wsClient.disconnect();
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    wsClient = new ReconnectCore({
+        url: `${protocol}//${window.location.host}`,
+        checkAlive: checkServerAlive,
+        onStateChange: updateConnectionStatus,
+        onOpen: () => {
+            if (deviceName) {
+                wsClient.send({ type: 'set-name', name: deviceName });
+            }
+        },
+        onMessage: (rawData) => {
+            try {
+                const data = JSON.parse(rawData);
+                if (data.type !== 'pong') {
+                    handleMessage(data);
+                }
+            } catch (e) {
+                console.error('消息解析错误:', e);
+            }
+        }
+    });
+
+    wsClient.connect();
+}
+
+/**
+ * 显示断开状态（可点击重连）
+ */
 function showDisconnected() {
-    shouldReconnect = false;
-    elements.connectionStatus.textContent = '● 已断开，点击重连';
-    elements.connectionStatus.classList.add('disconnected');
-    elements.connectionStatus.style.cursor = 'pointer';
-    elements.connectionStatus.onclick = () => {
-        elements.connectionStatus.textContent = '● 连接中...';
-        elements.connectionStatus.style.cursor = 'default';
-        elements.connectionStatus.onclick = null;
-        connectWebSocket();
-    };
+    if (wsClient) {
+        wsClient.disconnect();
+    }
+    updateConnectionStatus('disconnected');
 }
 
 // 处理WebSocket消息
@@ -398,6 +401,14 @@ function setupEventListeners() {
 
     elements.refreshBtn.addEventListener('click', loadFileList);
     elements.copyBtn.addEventListener('click', copyUrl);
+
+    // 连接状态栏点击重连（统一绑定一次，避免反复设置 onclick 导致覆盖或遗漏）
+    elements.connectionStatus.addEventListener('click', () => {
+        const text = elements.connectionStatus.textContent;
+        if (text.includes('已断开') || text.includes('服务器未启动')) {
+            connectWebSocket();
+        }
+    });
 
     // IP 变化提示条关闭按钮
     if (elements.ipChangeClose) {
@@ -943,11 +954,14 @@ function deleteSelected() {
 function handleTransferRequest(data) {
     const accept = confirm(`设备 "${data.fromName}" 想要发送文件 "${data.fileName}" (${formatSize(data.fileSize)})，是否接受？`);
 
-    ws.send(JSON.stringify({
-        type: 'transfer-response',
-        targetId: data.fromId,
-        accepted: accept
-    }));
+    // 只有在连接正常时才发送响应，避免断开后调用 send 报错
+    if (wsClient) {
+        wsClient.send({
+            type: 'transfer-response',
+            targetId: data.fromId,
+            accepted: accept
+        });
+    }
 }
 
 function handleTransferResponse(data) {
