@@ -1,0 +1,23 @@
+{
+    "name": "局域网文件传输",
+    "short_name": "局域网传输",
+    "description": "局域网内快速传输文件的 Web 工具",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#eef3f8",
+    "theme_color": "#0891b2",
+    "icons": [
+        {
+            "src": "icons/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
+}

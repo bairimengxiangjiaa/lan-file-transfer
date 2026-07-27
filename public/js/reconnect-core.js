@@ -34,7 +34,7 @@
          * @param {function} [options.onStateChange] - 状态变化回调，参数为状态字符串
          * @param {function} [options.onMessage] - 收到消息回调，参数为消息字符串
          * @param {function} [options.onOpen] - 连接成功回调
-         * @param {number} [options.heartbeatInterval=15000] - 心跳间隔（毫秒）
+         * @param {number} [options.heartbeatInterval=5000] - 心跳间隔（毫秒）
          * @param {number} [options.maxReconnectDelay=10000] - 最大自动重连间隔（毫秒）
          */
         constructor(options) {
