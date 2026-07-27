@@ -3,3 +3,6 @@ uploads/
 .tmp/
 *.zip
 *.log
+.tmp-*.png
+.DS_Store
+Thumbs.db

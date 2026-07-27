@@ -1,26 +1,45 @@
 {
   "name": "lan-file-transfer",
   "version": "1.0.0",
-  "description": "局域网文件传输工具",
+  "description": "局域网文件传输 Web 工具：拖拽上传、扫码访问、设备在线列表、PWA，无需安装客户端",
   "main": "server.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bairimengxiangjiaa/lan-file-transfer.git"
+  },
+  "homepage": "https://github.com/bairimengxiangjiaa/lan-file-transfer#readme",
+  "bugs": {
+    "url": "https://github.com/bairimengxiangjiaa/lan-file-transfer/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "node --test tests/**/*.test.js"
+    "test": "node --test"
   },
   "keywords": [
     "lan",
-    "file",
-    "transfer",
-    "share"
+    "file-transfer",
+    "file-sharing",
+    "wifi",
+    "pwa",
+    "express",
+    "websocket",
+    "mdns"
   ],
-  "author": "",
+  "author": "bairimengxiangjiaa",
   "license": "MIT",
   "dependencies": {
     "archiver": "^8.0.0",
+    "bonjour-service": "^1.4.3",
     "express": "^4.18.2",
     "multer": "^1.4.5-lts.1",
     "qrcode-terminal": "^0.12.0",
     "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "qrcodejs2": "^0.0.2"
   }
 }
