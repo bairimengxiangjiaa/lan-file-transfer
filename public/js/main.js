@@ -12,7 +12,9 @@ let myDeviceName = localStorage.getItem('deviceName') || '';
 /* ==================== 连接信息卡片 ==================== */
 
 function updateConnectInfo(data) {
-    const port = window.location.port || '80';
+    // 非默认端口才显式带上；https 默认 443、http 默认 80
+    const defaultPort = window.location.protocol === 'https:' ? '443' : '80';
+    const port = window.location.port || defaultPort;
     const url = `http://${data.ip}:${port}`;
 
     document.getElementById('connectUrl').textContent = url;
@@ -62,7 +64,8 @@ function initCopyButton() {
 /* ==================== IP 变化提示 ==================== */
 
 function showIpBanner(newIp) {
-    const port = window.location.port || '80';
+    const defaultPort = window.location.protocol === 'https:' ? '443' : '80';
+    const port = window.location.port || defaultPort;
     document.getElementById('ipChangeNewAddr').textContent = `http://${newIp}:${port}`;
     document.getElementById('ipChangeBanner').style.display = '';
 }

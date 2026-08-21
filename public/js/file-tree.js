@@ -85,7 +85,10 @@ export function initFileTree() {
 /** 拉取文件列表并渲染（保留现有选择/折叠状态，剔除已不存在的路径） */
 export function loadFileList() {
     fetch('/files')
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        })
         .then(files => {
             allFiles = files;
             const existing = new Set(files.map(f => f.name));
@@ -99,6 +102,7 @@ export function loadFileList() {
         })
         .catch(err => {
             console.error('加载文件列表失败:', err);
+            toast('加载文件列表失败，请检查服务是否正常', 'error');
         });
 }
 

@@ -106,8 +106,12 @@ function createFilesRouter({ uploadDir, maxFileSize = 2 * 1024 * 1024 * 1024 }) 
 
     // 文件上传接口
     router.post('/upload', (req, res) => {
-        // 请求中断时清理已写入的临时文件
-        req.on('aborted', () => cleanupTmpFile(req));
+        // 标记文件是否已成功落盘：未落盘时连接关闭需清理临时文件
+        let fileSaved = false;
+        // 连接关闭（含中断）时清理已写入的临时文件；aborted 事件已被 Node 废弃
+        req.on('close', () => {
+            if (!fileSaved) cleanupTmpFile(req);
+        });
 
         uploadSingle(req, res, (err) => {
             if (err) {
@@ -144,6 +148,7 @@ function createFilesRouter({ uploadDir, maxFileSize = 2 * 1024 * 1024 * 1024 }) 
                 // 已存在则追加序号后缀，不静默覆盖
                 savePath = uniquePath(savePath);
                 fs.renameSync(req.file.path, savePath);
+                fileSaved = true;
 
                 res.json({
                     success: true,
@@ -293,19 +298,18 @@ function createFilesRouter({ uploadDir, maxFileSize = 2 * 1024 * 1024 * 1024 }) 
         }
     });
 
-    // 递归获取文件列表（异步，不阻塞事件循环）
+    // 递归获取文件列表（异步，不阻塞事件循环；同层条目并行 stat）
     async function listRecursive(dir, basePath = '') {
-        const result = [];
         let items;
         try {
             items = await fsp.readdir(dir, { withFileTypes: true });
         } catch (e) {
             console.error('读取目录失败:', e);
-            return result;
+            return [];
         }
 
-        for (const item of items) {
-            if (item.name.startsWith('.')) continue; // 跳过隐藏文件/临时目录
+        const nested = await Promise.all(items.map(async (item) => {
+            if (item.name.startsWith('.')) return null; // 跳过隐藏文件/临时目录
 
             const itemPath = path.join(dir, item.name);
             const relativePath = basePath ? `${basePath}/${item.name}` : item.name;
@@ -313,27 +317,32 @@ function createFilesRouter({ uploadDir, maxFileSize = 2 * 1024 * 1024 * 1024 }) 
             try {
                 const stats = await fsp.stat(itemPath);
                 if (item.isDirectory()) {
-                    result.push({
-                        name: relativePath,
-                        originalName: item.name,
-                        size: 0,
-                        uploadedAt: stats.mtime,
-                        isDirectory: true
-                    });
-                    result.push(...await listRecursive(itemPath, relativePath));
-                } else {
-                    result.push({
-                        name: relativePath,
-                        originalName: item.name,
-                        size: stats.size,
-                        uploadedAt: stats.mtime,
-                        isDirectory: false
-                    });
+                    // 先并行读取子目录，再与当前目录项一起返回
+                    const children = await listRecursive(itemPath, relativePath);
+                    return [
+                        {
+                            name: relativePath,
+                            originalName: item.name,
+                            size: 0,
+                            uploadedAt: stats.mtime,
+                            isDirectory: true
+                        },
+                        ...children
+                    ];
                 }
-            } catch (e) { /* 文件可能已被删除，跳过 */ }
-        }
+                return [{
+                    name: relativePath,
+                    originalName: item.name,
+                    size: stats.size,
+                    uploadedAt: stats.mtime,
+                    isDirectory: false
+                }];
+            } catch (e) {
+                return null; // 文件可能已被删除，跳过
+            }
+        }));
 
-        return result;
+        return nested.filter(Boolean).flat();
     }
 
     // 获取文件列表

@@ -17,12 +17,11 @@ function createWsHub(server, options = {}) {
     const clients = new Map();
     let currentIP = getLocalIP();
 
-    // 心跳检测：超时无活动则断开
+    // 心跳检测：超时无活动则断开（删除与广播统一由 close 事件处理，避免漏广播）
     const sweeper = setInterval(() => {
         const now = Date.now();
         wss.clients.forEach(ws => {
             if (ws.lastActivity && now - ws.lastActivity > heartbeatTimeout) {
-                clients.delete(ws);
                 ws.terminate();
             }
         });
