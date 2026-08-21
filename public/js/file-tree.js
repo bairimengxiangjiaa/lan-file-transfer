@@ -38,8 +38,15 @@ export function initFileTree() {
         handleCheckboxChange(e);
     });
 
-    // 点击行为：下载/删除/预览/折叠（事件委托）
+    // 点击行为：下载/删除/预览/折叠/整行下载（事件委托）
     list.addEventListener('click', async (e) => {
+        const previewBtn = e.target.closest('[data-action="preview"]');
+        if (previewBtn) {
+            const filePath = previewBtn.dataset.path;
+            openLightbox('/download?path=' + encodeURIComponent(filePath) + '&inline=1', filePath);
+            return;
+        }
+
         const downloadBtn = e.target.closest('[data-action="download"]');
         if (downloadBtn) {
             downloadFile(downloadBtn.dataset.path);
@@ -54,10 +61,10 @@ export function initFileTree() {
             return;
         }
 
-        const previewName = e.target.closest('[data-action="preview"]');
-        if (previewName) {
-            const filePath = previewName.dataset.path;
-            openLightbox('/download?path=' + encodeURIComponent(filePath) + '&inline=1', filePath);
+        // 点击文件行任意空白处直接下载（复选框除外）
+        const fileItem = e.target.closest('.file-item');
+        if (fileItem && !e.target.closest('.file-checkbox')) {
+            downloadFile(fileItem.dataset.path);
             return;
         }
 
@@ -253,12 +260,11 @@ function renderItems(items, files) {
         const previewable = isImageFile(displayName);
 
         html += `
-            <div class="file-item">
+            <div class="file-item" data-path="${escapeHtml(file.name)}" title="点击下载">
                 <input type="checkbox" class="file-checkbox" data-path="${escapeHtml(file.name)}" data-type="file"
                     ${selectedFiles.has(file.name) ? 'checked' : ''} aria-label="选择文件">
                 <span class="file-icon">${getFileIcon(displayName)}</span>
-                <span class="file-name${previewable ? ' previewable' : ''}"
-                    ${previewable ? `data-action="preview" data-path="${escapeHtml(file.name)}" title="点击预览"` : ''}>${escapeHtml(displayName)}</span>
+                <span class="file-name">${escapeHtml(displayName)}</span>
                 <span class="file-size">${formatSize(file.size)}</span>
                 <div class="file-actions">
                     ${previewable ? `<button class="btn-item-action" data-action="preview" data-path="${escapeHtml(file.name)}" title="预览" aria-label="预览图片">👁️</button>` : ''}
