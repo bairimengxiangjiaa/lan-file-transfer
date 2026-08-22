@@ -17,20 +17,6 @@ function shouldStore(name) {
     return PRECOMPRESSED_EXTS.has(path.extname(name).toLowerCase());
 }
 
-// 修复中文文件名编码（multer 1.x 以 latin1 解析 originalname）
-function fixEncoding(str) {
-    if (!str) return str;
-    try {
-        const buf = Buffer.from(str, 'latin1');
-        const decoded = buf.toString('utf8');
-        // 如果解码后包含替换字符，说明原始编码就是正确的
-        if (decoded.includes('\uFFFD')) return str;
-        return decoded;
-    } catch (e) {
-        return str;
-    }
-}
-
 // RFC 5987 格式的 Content-Disposition，兼容中文等非 ASCII 文件名
 function contentDisposition(type, filename) {
     const fallback = filename.replace(/[^\x20-\x7e]/g, '_').replace(/"/g, "'");
@@ -67,19 +53,28 @@ function createFilesRouter({ uploadDir, maxFileSize = 2 * 1024 * 1024 * 1024 }) 
         return isPathSafe(joined) ? joined : null;
     }
 
-    // 若目标路径已存在，追加 " (1)"、" (2)" 后缀，避免静默覆盖
-    function uniquePath(p) {
-        if (!fs.existsSync(p)) return p;
-        const dir = path.dirname(p);
-        const ext = path.extname(p);
-        const base = path.basename(p, ext);
-        let i = 1;
-        let candidate;
-        do {
-            candidate = path.join(dir, `${base} (${i})${ext}`);
-            i++;
-        } while (fs.existsSync(candidate));
-        return candidate;
+    /**
+     * 原子化保存：'wx' 独占创建占位文件保证名字归属，避免并发同名覆盖竞态
+     * 已存在则追加 " (1)"、" (2)" 后缀，不静默覆盖
+     * @returns {string} 实际落盘路径
+     */
+    function saveWithoutOverwrite(tmpPath, initialPath) {
+        const dir = path.dirname(initialPath);
+        const ext = path.extname(initialPath);
+        const base = path.basename(initialPath, ext);
+        for (let i = 0; ; i++) {
+            const candidate = i === 0 ? initialPath : path.join(dir, `${base} (${i})${ext}`);
+            try {
+                // 原子独占创建 0 字节占位文件：并发同名时只有一个请求能成功
+                const fd = fs.openSync(candidate, 'wx');
+                fs.closeSync(fd);
+                fs.renameSync(tmpPath, candidate); // 覆盖自己刚占位的空文件
+                return candidate;
+            } catch (e) {
+                if (e.code === 'EEXIST') continue; // 名字被占，试下一个序号
+                throw e;
+            }
+        }
     }
 
     function cleanupTmpFile(req) {
@@ -95,7 +90,13 @@ function createFilesRouter({ uploadDir, maxFileSize = 2 * 1024 * 1024 * 1024 }) 
             cb(null, Date.now() + '-' + Math.random().toString(36).slice(2, 8));
         }
     });
-    const uploadSingle = multer({ storage, limits: { fileSize: maxFileSize } }).single('file');
+    // defParamCharset: 'utf8' —— 按原始 UTF-8 解码 multipart filename，
+    // 替代旧版 latin1 解码 + fixEncoding 补丁的方案（multer 2.x 官方选项）
+    const uploadSingle = multer({
+        storage,
+        limits: { fileSize: maxFileSize },
+        defParamCharset: 'utf8'
+    }).single('file');
 
     const router = express.Router();
 
@@ -124,8 +125,8 @@ function createFilesRouter({ uploadDir, maxFileSize = 2 * 1024 * 1024 * 1024 }) 
             }
 
             try {
-                req.file.originalname = fixEncoding(req.file.originalname);
-                const relativePath = fixEncoding(req.body.relativePath || '');
+                // multer 2.x 原生按 UTF-8 解码文件名与字段，无需再修正编码
+                const relativePath = req.body.relativePath || '';
                 let savePath;
 
                 if (relativePath) {
@@ -145,9 +146,8 @@ function createFilesRouter({ uploadDir, maxFileSize = 2 * 1024 * 1024 * 1024 }) 
                     }
                 }
 
-                // 已存在则追加序号后缀，不静默覆盖
-                savePath = uniquePath(savePath);
-                fs.renameSync(req.file.path, savePath);
+                // 原子化落盘：已存在则追加序号后缀，不静默覆盖（并发安全）
+                savePath = saveWithoutOverwrite(req.file.path, savePath);
                 fileSaved = true;
 
                 res.json({
@@ -208,6 +208,9 @@ function createFilesRouter({ uploadDir, maxFileSize = 2 * 1024 * 1024 * 1024 }) 
                 const originalName = path.basename(filename);
                 if (req.query.inline === '1') {
                     res.setHeader('Content-Disposition', contentDisposition('inline', originalName));
+                    // 加固：sandbox 禁止内联文档中的脚本执行（防 SVG 内嵌 <script> 同源 XSS），
+                    // 图片渲染不受影响
+                    res.setHeader('Content-Security-Policy', 'sandbox');
                     res.sendFile(filepath);
                 } else {
                     res.download(filepath, originalName);

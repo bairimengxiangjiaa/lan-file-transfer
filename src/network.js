@@ -70,7 +70,7 @@ async function findAvailablePort(startPort) {
  * 发布 mDNS 服务广播，使局域网设备可通过 http://主机名.local:端口 访问
  * 失败时静默降级（不影响 IP 直连使用）
  * @param {number} port
- * @returns {{ unpublish: (cb?: Function) => void }}
+ * @returns {{ ok: boolean, unpublish: (cb?: Function) => void }} ok 表示广播模块是否成功启动
  */
 function publishMdns(port) {
     try {
@@ -82,6 +82,7 @@ function publishMdns(port) {
             port
         });
         return {
+            ok: true,
             unpublish(cb) {
                 try {
                     bonjour.unpublishAll(() => bonjour.destroy(cb));
@@ -92,7 +93,7 @@ function publishMdns(port) {
         };
     } catch (e) {
         console.error('mDNS 广播启动失败（不影响使用）:', e.message);
-        return { unpublish(cb) { if (cb) cb(); } };
+        return { ok: false, unpublish(cb) { if (cb) cb(); } };
     }
 }
 

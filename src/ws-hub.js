@@ -16,6 +16,8 @@ function createWsHub(server, options = {}) {
     const wss = new WebSocket.Server({ server });
     const clients = new Map();
     let currentIP = getLocalIP();
+    // mDNS 广播发布成功后才有值；welcome 按需携带，避免下发解析不了的假地址
+    let mdnsHost = null;
 
     // 心跳检测：超时无活动则断开（删除与广播统一由 close 事件处理，避免漏广播）
     const sweeper = setInterval(() => {
@@ -82,14 +84,15 @@ function createWsHub(server, options = {}) {
             connectedAt: new Date()
         });
 
-        ws.send(JSON.stringify({
+        const welcome = {
             type: 'welcome',
             deviceId,
             deviceName,
             ip: currentIP,
-            hostname: os.hostname(),
-            mDNS: os.hostname() + '.local'
-        }));
+            hostname: os.hostname()
+        };
+        if (mdnsHost) welcome.mDNS = mdnsHost;
+        ws.send(JSON.stringify(welcome));
 
         broadcastDeviceList();
 
@@ -123,6 +126,10 @@ function createWsHub(server, options = {}) {
                 currentIP = ip;
                 broadcast({ type: 'ip-update', ip });
             }
+        },
+        /** 注入 mDNS 主机名（发布成功后调用），新连接的 welcome 会携带 */
+        setMdns(host) {
+            if (host) mdnsHost = host;
         },
         /** 关闭所有连接并停止心跳检测 */
         close() {

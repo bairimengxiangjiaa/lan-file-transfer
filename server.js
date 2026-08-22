@@ -76,6 +76,8 @@ async function main() {
 
     server.listen(port, '0.0.0.0', () => {
         mdns = publishMdns(port);
+        // 仅在广播真正发布后向客户端提供 .local 备用地址
+        if (mdns.ok) wsHub.setMdns(`${os.hostname()}.local`);
         showStartupInfo(port, originalPort, wsHub.getIP());
         openBrowser(`http://localhost:${port}`);
     });
