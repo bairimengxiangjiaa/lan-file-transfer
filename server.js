@@ -22,6 +22,8 @@ async function isPortOccupiedBySelf(port) {
 }
 
 function openBrowser(url) {
+    // agent/脚本按需静默启动时（LAN_TRANSFER_NO_BROWSER=1）不弹浏览器
+    if (process.env.LAN_TRANSFER_NO_BROWSER) return;
     const start = process.platform === 'darwin' ? 'open'
         : process.platform === 'win32' ? 'start'
         : 'xdg-open';
@@ -29,7 +31,7 @@ function openBrowser(url) {
 }
 
 // 显示启动信息
-function showStartupInfo(port, originalPort, lanIP) {
+function showStartupInfo(port, originalPort, lanIP, autoExitMinutes) {
     console.log('');
     if (originalPort && port !== originalPort) {
         console.log(`  端口 ${originalPort} 已被占用，自动切换到 ${port}`);
@@ -41,13 +43,19 @@ function showStartupInfo(port, originalPort, lanIP) {
     console.log(`  │ 局域网: http://${lanIP}:${port}`);
     console.log(`  │ mDNS:   http://${os.hostname()}.local:${port}`);
     console.log('  │');
-    console.log('  │ 浏览器将自动打开，按 Ctrl+C 停止');
+    if (autoExitMinutes > 0) {
+        console.log(`  │ ${autoExitMinutes} 分钟后自动关闭（手机请先扫码）`);
+    } else {
+        console.log('  │ 浏览器将自动打开，按 Ctrl+C 停止');
+    }
     console.log('  ╰─────────────────────────────────────╯');
     console.log('');
 }
 
 async function main() {
     const originalPort = config.DEFAULT_PORT;
+    // agent 按需启动时设置的自动关闭时长（分钟）；0 表示常驻不自动关闭
+    const autoExitMinutes = Number(process.env.LAN_TRANSFER_AUTO_EXIT_MINUTES) || 0;
     let port = originalPort;
 
     // 先检查默认端口是否已经被我们自己的服务占用
@@ -74,12 +82,23 @@ async function main() {
         wsHub.setIP(getLocalIP());
     }, config.IP_WATCH_INTERVAL);
 
+    // agent 按需启动时的自动关闭定时器（0 分钟则不设置）
+    let autoExitTimer = null;
+
     server.listen(port, '0.0.0.0', () => {
         mdns = publishMdns(port);
         // 仅在广播真正发布后向客户端提供 .local 备用地址
         if (mdns.ok) wsHub.setMdns(`${os.hostname()}.local`);
-        showStartupInfo(port, originalPort, wsHub.getIP());
+        showStartupInfo(port, originalPort, wsHub.getIP(), autoExitMinutes);
         openBrowser(`http://localhost:${port}`);
+
+        // 到期自动关闭：临时分享场景（如给手机传安装包）用完即走，避免服务常驻
+        if (autoExitMinutes > 0) {
+            autoExitTimer = setTimeout(() => {
+                console.log(`\n  已运行 ${autoExitMinutes} 分钟，自动关闭服务`);
+                gracefulShutdown('定时关闭');
+            }, autoExitMinutes * 60 * 1000);
+        }
     });
 
     /**
@@ -89,6 +108,7 @@ async function main() {
     function gracefulShutdown(signal) {
         console.log(`\n  收到 ${signal}，正在关闭服务...`);
         clearInterval(ipWatcher);
+        if (autoExitTimer) clearTimeout(autoExitTimer);
         mdns.unpublish();
         wsHub.close();
 
