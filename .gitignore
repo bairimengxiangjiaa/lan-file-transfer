@@ -1,8 +1,9 @@
 node_modules/
 uploads/
 .tmp/
+.tmp-*.png
 *.zip
 *.log
-.tmp-*.png
+.opencode/
 .DS_Store
 Thumbs.db
