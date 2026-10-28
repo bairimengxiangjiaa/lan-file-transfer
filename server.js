@@ -31,7 +31,7 @@ function openBrowser(url) {
 }
 
 // 显示启动信息
-function showStartupInfo(port, originalPort, lanIP, autoExitMinutes) {
+function showStartupInfo(port, originalPort, lanIP, autoExitMinutes, noBrowser) {
     console.log('');
     if (originalPort && port !== originalPort) {
         console.log(`  端口 ${originalPort} 已被占用，自动切换到 ${port}`);
@@ -45,6 +45,8 @@ function showStartupInfo(port, originalPort, lanIP, autoExitMinutes) {
     console.log('  │');
     if (autoExitMinutes > 0) {
         console.log(`  │ ${autoExitMinutes} 分钟后自动关闭（手机请先扫码）`);
+    } else if (noBrowser) {
+        console.log('  │ 静默运行中（未打开浏览器），按 Ctrl+C 停止');
     } else {
         console.log('  │ 浏览器将自动打开，按 Ctrl+C 停止');
     }
@@ -54,8 +56,11 @@ function showStartupInfo(port, originalPort, lanIP, autoExitMinutes) {
 
 async function main() {
     const originalPort = config.DEFAULT_PORT;
-    // agent 按需启动时设置的自动关闭时长（分钟）；0 表示常驻不自动关闭
-    const autoExitMinutes = Number(process.env.LAN_TRANSFER_AUTO_EXIT_MINUTES) || 0;
+    // agent 按需启动时的运行开关
+    const noBrowser = !!process.env.LAN_TRANSFER_NO_BROWSER;
+    // 自动关闭时长（分钟），0 表示常驻不自动关闭；
+    // 上限保护：Node 的 setTimeout 超过 2^31-1 ms（约 24.8 天）会立即触发，故截断到 35000 分钟
+    const autoExitMinutes = Math.min(Math.max(Number(process.env.LAN_TRANSFER_AUTO_EXIT_MINUTES) || 0, 0), 35000);
     let port = originalPort;
 
     // 先检查默认端口是否已经被我们自己的服务占用
@@ -89,7 +94,7 @@ async function main() {
         mdns = publishMdns(port);
         // 仅在广播真正发布后向客户端提供 .local 备用地址
         if (mdns.ok) wsHub.setMdns(`${os.hostname()}.local`);
-        showStartupInfo(port, originalPort, wsHub.getIP(), autoExitMinutes);
+        showStartupInfo(port, originalPort, wsHub.getIP(), autoExitMinutes, noBrowser);
         openBrowser(`http://localhost:${port}`);
 
         // 到期自动关闭：临时分享场景（如给手机传安装包）用完即走，避免服务常驻

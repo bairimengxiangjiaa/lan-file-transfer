@@ -43,7 +43,7 @@ if (-not $found) {
     # AUTO_EXIT_MINUTES=5：临时分享场景用完即走，5 分钟后自动关闭
     Start-Process -FilePath 'cmd' -WindowStyle Hidden -WorkingDirectory $proj `
         -ArgumentList '/c "set LAN_TRANSFER_NO_BROWSER=1&& set LAN_TRANSFER_AUTO_EXIT_MINUTES=5&& node server.js > "%TEMP%\lan-transfer-agent.log" 2>&1"'
-    # 等待就绪，最多 15 秒（实测冷启动约 1~12 秒，取决于端口扫描耗时）
+    # 等待就绪，最多 15 秒（实测冷启动约 0.5~5 秒，取决于端口扫描耗时）
     foreach ($i in 1..30) {
         Start-Sleep -Milliseconds 500
         $found = Find-LanTransfer
@@ -63,10 +63,12 @@ $port, $base = $found
 agent 启动的服务不弹浏览器，改为**由 agent 用内置浏览器工具打开页面**，用户对着电脑屏幕扫码：
 
 ```
-打开 http://localhost:3000（或 http://<局域网IP>:<端口>）
+打开 $base    # 即第 0 步探测到的实际地址（端口被占用时服务会自动 +1，必须用 $base 而不是写死 3000）
 ```
 
 然后告知用户：页面左侧「连接信息」卡片里就是二维码，按 `Ctrl` + `+` 放大页面后手机扫码即可。
+
+> 若你所在环境没有浏览器工具，就把地址告诉用户自己打开：本机用 `$base`，手机用 `http://<局域网IP>:$port`。
 
 ⚠️ 实测踩坑（务必遵守）：
 
