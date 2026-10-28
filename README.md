@@ -48,7 +48,7 @@ npm start
 
 ## 📖 使用说明
 
-1. **首次访问**: 设置设备名称（点击左上角设备名可随时修改）
+1. **首次访问**: 设备名自动分配（`设备-XXXX`），无需填写；点击左上角设备名可随时自定义
 2. **上传文件**: 拖拽文件/文件夹到页面任意位置，或点击选择
 3. **管理文件**: 搜索/排序/勾选后批量下载（自动打包 ZIP）或删除
 4. **预览图片**: 点击图片文件名或 👁️ 按钮
@@ -60,6 +60,25 @@ npm test
 ```
 
 使用 Node 内置 `node:test`，覆盖重连核心与服务端全部 HTTP 接口（路径遍历防护、中文文件名、同名不覆盖、批量下载去重等）。
+
+## 🤖 Agent 接入（Skill）
+
+本服务是纯 REST API，无需 MCP 等额外协议即可被 AI agent 调用。仓库内置一份开箱即用的 Agent Skill：
+
+```
+skills/lan-file-transfer/SKILL.md
+```
+
+**能力**：agent 可以把本机文件推入共享区、把生成的报告/笔记/代码直接写成共享区文件，并返回手机可用的下载链接（同一局域网内扫码/浏览器打开即取）。
+
+**安装**：把 `skills/lan-file-transfer/` 目录复制到你的 agent 客户端 skills 目录即可，例如：
+
+- CodeArts：`C:\Users\<你>\.codearts\skills\`
+- Claude Code：`~/.claude/skills/`
+
+Skill 内容是基于 `curl` 的操作手册（**按需启动服务**、服务探测、上传、中文文件名处理、下载链接拼接规则及实测踩坑），服务端仅需设置 `LAN_TRANSFER_NO_BROWSER=1` 环境变量即可静默运行（不弹浏览器），零新依赖。触发方式：对 agent 说"传到手机 / 放进共享区"即可——服务没启动时 agent 会自动拉起。
+
+> 注意：下载链接仅在局域网内可达，跨网段使用需自行配置内网穿透。
 
 ## 🛠️ 技术栈
 
@@ -92,6 +111,7 @@ lan-file-transfer/
 │       ├── reconnect-core.js  # 断线重连核心（UMD）
 │       └── qrcode.min.js  # 二维码库（本地化，离线可用）
 ├── tests/                 # node:test 测试
+├── skills/                # Agent Skill（SKILL.md，复制到 agent 客户端 skills 目录即用）
 └── uploads/               # 上传文件存储目录（自动创建）
 ```
 
@@ -104,6 +124,13 @@ DEFAULT_PORT: 3000,                        // 默认端口（占用时自动 +1 
 UPLOAD_DIR: path.join(__dirname, '..', 'uploads'), // 上传目录
 MAX_FILE_SIZE: 2 * 1024 * 1024 * 1024,     // 单文件大小限制（默认 2GB）
 ```
+
+也可通过环境变量控制运行行为（主要用于脚本/agent 按需启动）：
+
+| 环境变量 | 作用 |
+|---|---|
+| `LAN_TRANSFER_NO_BROWSER=1` | 启动时不自动打开浏览器（静默运行） |
+| `LAN_TRANSFER_AUTO_EXIT_MINUTES=5` | 运行指定分钟数后自动关闭（临时分享场景，用完即走） |
 
 ## 📝 注意事项
 
