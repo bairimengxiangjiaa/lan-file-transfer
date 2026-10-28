@@ -137,12 +137,9 @@ function initNameModal() {
         input.focus();
     });
 
-    if (!myDeviceName) {
-        modal.classList.add('active');
-        input.focus();
-    } else {
-        applyDeviceName(myDeviceName);
-    }
+    // 新设备不再强制填写名称：直接沿用服务端分配的默认名（设备-XXXX），
+    // 需要自定义时点击左上角设备名即可打开本弹窗修改
+    if (myDeviceName) applyDeviceName(myDeviceName);
 }
 
 /* ==================== 文件选择与拖拽上传 ==================== */

@@ -1035,8 +1035,26 @@ input, select {
         display: contents;
     }
 
-    /* 手机端已在页面内，无需二维码与访问地址 */
-    .connect-card { display: none; }
+    /* 中等宽度（平板 / 分屏 / IDE 内置预览等）：单列但保留二维码，
+       横向紧凑排布，既省纵向空间又保证扫码可见 */
+    .connect-card {
+        order: 0;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 16px;
+        text-align: left;
+        padding: 14px 16px;
+    }
+
+    .connect-info {
+        flex: 1;
+    }
+
+    .connect-url {
+        justify-content: flex-start;
+    }
+
     .upload-section { order: 1; }
     .transfer-section { order: 2; }
     .file-section { order: 3; }
@@ -1068,4 +1086,9 @@ input, select {
     .drop-overlay-inner {
         padding: 36px 30px;
     }
+}
+
+/* 窄屏手机：页面本身就在手机上，二维码与访问地址无意义，直接隐藏 */
+@media (max-width: 480px) {
+    .connect-card { display: none; }
 }
