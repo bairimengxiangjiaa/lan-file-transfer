@@ -18,6 +18,7 @@
 - 📱 响应式设计 + PWA（手机“添加到桌面”获得独立 App 体验，手机端自动隐藏二维码板块）
 - 🌐 mDNS 固定域名：`http://主机名.local:端口`（iOS/macOS/Windows 支持）
 - 🚀 无需安装、无构建工具，浏览器即可使用；二维码扫码直达
+- 🤖 Agent 接入：内置 Skill，可让 AI agent 按需拉起服务、把文件/报告推入共享区并发手机链接（用完自动关闭）
 
 ## 🚀 快速开始
 
@@ -63,20 +64,33 @@ npm test
 
 ## 🤖 Agent 接入（Skill）
 
-本服务是纯 REST API，无需 MCP 等额外协议即可被 AI agent 调用。仓库内置一份开箱即用的 Agent Skill：
+本服务是纯 REST API，**无需引入 MCP 等额外协议**即可被 AI agent 调用。仓库内置一份开箱即用的 Agent Skill：
 
 ```
 skills/lan-file-transfer/SKILL.md
 ```
 
-**能力**：agent 可以把本机文件推入共享区、把生成的报告/笔记/代码直接写成共享区文件，并返回手机可用的下载链接（同一局域网内扫码/浏览器打开即取）。
+**它能做什么**：对 agent 说「把这个 APK 传到手机」，agent 会自行完成整条链路——
 
-**安装**：把 `skills/lan-file-transfer/` 目录复制到你的 agent 客户端 skills 目录即可，例如：
+1. 按需拉起服务（静默启动，不弹浏览器；已在运行则直接复用）
+2. 上传文件到共享区
+3. 在电脑屏幕上打开页面供手机扫码（并给出可手输的直链）
+4. 5 分钟后自动关闭服务，用完即走、不常驻
 
-- CodeArts：`C:\Users\<你>\.codearts\skills\`
-- Claude Code：`~/.claude/skills/`
+**安装**：把 `skills/lan-file-transfer/` 复制到你的 agent 客户端 skills 目录：
 
-Skill 内容是基于 `curl` 的操作手册（**按需启动服务**、服务探测、上传、中文文件名处理、下载链接拼接规则及实测踩坑），服务端仅需设置 `LAN_TRANSFER_NO_BROWSER=1` 环境变量即可静默运行（不弹浏览器），零新依赖。触发方式：对 agent 说"传到手机 / 放进共享区"即可——服务没启动时 agent 会自动拉起。
+| 客户端 | skills 目录 |
+|---|---|
+| CodeArts | `~/.codearts/skills/` |
+| WorkBuddy | `~/.workbuddy/skills/` |
+| CodeBuddy | `~/.codebuddy/skills/` |
+| Trae CN | `~/.trae-cn/skills/` |
+| Qoder CN | `~/.qoder-cn/skills/` |
+| Claude Code | `~/.claude/skills/` |
+
+> 安装后请把 `SKILL.md` 中的 `<项目路径>` 改成你的实际安装路径（例如 `D:\vibecoding\lan-file-transfer`）。
+
+**为什么是 Skill 而不是 MCP**：agent 需要的三个操作为「推送本机文件 / 写入文本到共享区 / 生成下载链接」，现有 REST API 已全覆盖。一份基于 `curl` 的操作手册即可完成，**零服务端改动、零新依赖**，且上下文占用远小于常驻工具 schema。
 
 > 注意：下载链接仅在局域网内可达，跨网段使用需自行配置内网穿透。
 
